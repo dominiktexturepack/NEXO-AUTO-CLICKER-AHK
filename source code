@@ -1,0 +1,167 @@
+#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+; === NEXO AutoClicker Pro ===
+; Free open source autoclicker
+; GitHub: https://github.com/dominiktexturepack
+
+running := false
+currentBind := "F6"
+listeningForBind := false
+
+myGui := Gui("+AlwaysOnTop", "NEXO AutoClicker Pro")
+myGui.BackColor := "1e1e2e"
+
+myGui.SetFont("s15 bold cCDD6F4", "Segoe UI")
+myGui.Add("Text", "x20 y15 w300 Center", "⚡ NEXO AutoClicker Pro")
+
+myGui.SetFont("s8 c6C7086", "Segoe UI")
+myGui.Add("Text", "x20 y42 w300 Center", "Full customization of key, delay and bind")
+
+; Panel
+myGui.SetFont("s10 bold cCDD6F4", "Segoe UI")
+myGui.Add("Text", "x20 y80", "Action:")
+myGui.SetFont("s10 c1e1e2e", "Segoe UI")
+ActionDrop := myGui.Add("DropDownList", "x110 y77 w120 Background45475a", ["Key", "LMB", "RMB", "Middle"])
+ActionDrop.Value := 1
+
+myGui.SetFont("s10 bold cCDD6F4", "Segoe UI")
+myGui.Add("Text", "x20 y115", "Key:")
+myGui.SetFont("s10 cCDD6F4", "Segoe UI")
+KeyInput := myGui.Add("Edit", "x110 y112 w80 Background45475a", "e")
+
+myGui.SetFont("s8 c6C7086", "Segoe UI")
+myGui.Add("Text", "x200 y117", "(e.g. e, f, Space, F5)")
+
+myGui.SetFont("s10 bold cCDD6F4", "Segoe UI")
+myGui.Add("Text", "x20 y150", "Delay (ms):")
+myGui.SetFont("s10 cCDD6F4", "Segoe UI")
+DelayInput := myGui.Add("Edit", "x110 y147 w80 Background45475a", "50")
+
+DelaySlider := myGui.Add("Slider", "x20 y175 w300 Range10-2000 NoTicks", 50)
+DelaySlider.OnEvent("Change", UpdateDelay)
+
+myGui.SetFont("s10 bold c89DCEB", "Segoe UI")
+BindLabel := myGui.Add("Text", "x20 y215 w150", "Bind: [F6]")
+
+myGui.SetFont("s9 bold c1e1e2e", "Segoe UI")
+BindBtn := myGui.Add("Button", "x175 y210 w145 h28 Background89b4fa", "🎯 Set bind")
+BindBtn.OnEvent("Click", StartBindListen)
+
+myGui.SetFont("s13 bold c1e1e2e", "Segoe UI")
+ToggleBtn := myGui.Add("Button", "x60 y253 w220 h38 Backgrounda6e3a1", "▶ START")
+ToggleBtn.OnEvent("Click", Toggle)
+
+myGui.SetFont("s10 cFF4444", "Segoe UI")
+StatusLabel := myGui.Add("Text", "x20 y303 w300 Center", "Status: STOPPED ⛔")
+
+myGui.SetFont("s9 underline cFFFFFF", "Segoe UI")
+GithubLink := myGui.Add("Text", "x20 y328 w300 Center", "🐙 github.com/dominiktexturepack")
+GithubLink.OnEvent("Click", OpenGithub)
+
+myGui.Show("w340 h355")
+
+OpenGithub(*) {
+    Run "https://github.com/dominiktexturepack"
+}
+
+UpdateDelay(ctrl, *) {
+    DelayInput.Value := ctrl.Value
+}
+
+Toggle(*) {
+    global running
+    if !running
+        Start()
+    else
+        Stop()
+}
+
+Start(*) {
+    global running
+    running := true
+    ToggleBtn.Text := "⛔ STOP"
+    ToggleBtn.Opt("Backgroundf38ba8")
+    StatusLabel.Text := "Status: RUNNING ✅"
+    StatusLabel.SetFont("c00cc44")
+    SetTimer(DoAction, GetDelay())
+}
+
+Stop(*) {
+    global running
+    running := false
+    SetTimer(DoAction, 0)
+    ToggleBtn.Text := "▶ START"
+    ToggleBtn.Opt("Backgrounda6e3a1")
+    StatusLabel.Text := "Status: STOPPED ⛔"
+    StatusLabel.SetFont("cFF4444")
+}
+
+GetDelay() {
+    val := Integer(DelayInput.Value)
+    return (val > 0) ? val : 50
+}
+
+DoAction() {
+    global running
+    if !running
+        return
+    SetTimer(DoAction, 0)
+    action := ActionDrop.Text
+    if action = "LMB"
+        Click
+    else if action = "RMB"
+        Click "Right"
+    else if action = "Middle"
+        Click "Middle"
+    else {
+        key := Trim(KeyInput.Value)
+        if key = ""
+            key := "e"
+        Send("{" key "}")
+    }
+    SetTimer(DoAction, GetDelay())
+}
+
+StartBindListen(*) {
+    global listeningForBind
+    listeningForBind := true
+    BindBtn.Text := "Press any key..."
+    BindBtn.Opt("Backgroundfab387")
+    BindBtn.Enabled := false
+}
+
+CheckBind(key) {
+    global listeningForBind, currentBind
+    if listeningForBind {
+        currentBind := key
+        BindLabel.Text := "Bind: [" key "]"
+        BindBtn.Text := "🎯 Set bind"
+        BindBtn.Opt("Background89b4fa")
+        BindBtn.Enabled := true
+        listeningForBind := false
+        Hotkey currentBind, ToggleHotkey, "On"
+        return
+    }
+    if key = currentBind
+        Toggle()
+}
+
+ToggleHotkey(*) {
+    Toggle()
+}
+
+~*F1::  CheckBind("F1")
+~*F2::  CheckBind("F2")
+~*F3::  CheckBind("F3")
+~*F4::  CheckBind("F4")
+~*F5::  CheckBind("F5")
+~*F6::  CheckBind("F6")
+~*F7::  CheckBind("F7")
+~*F8::  CheckBind("F8")
+~*F9::  CheckBind("F9")
+~*F10:: CheckBind("F10")
+~*F11:: CheckBind("F11")
+~*F12:: CheckBind("F12")
+
+Hotkey "F6", ToggleHotkey
